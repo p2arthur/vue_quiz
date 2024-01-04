@@ -2,15 +2,26 @@
 
 <template>
   <div>
-    <h2 v-html="this.question" />
+    <template v-if="this.question">
+      <h2 v-html="this.question" />
 
-    <div>
-      <input
-        id="true"
-        type="radio"
-        value="true" />
-      <label for="true">aaaa</label><br />
-    </div>
+      <template
+        v-for="(answer, index) in answers"
+        :key="index">
+        <input
+          id="answer"
+          type="radio"
+          value="answer" />
+        <label
+          for="answer"
+          v-html="answer" /><br />
+      </template>
+      <button
+        @click="submitAnswer"
+        class="send">
+        Submit
+      </button></template
+    >
   </div>
 </template>
 //---------------------------------------------------------------------------
@@ -46,14 +57,20 @@
     computed: {
       answers() {
         const answers = JSON.parse(JSON.stringify(this.incorrectAnswers!));
-        const randomNumber = Math.round(Math.random() * answers.length);
+        const randomNumber = Math.round(Math.random() * answers?.length);
         console.log('random', randomNumber);
 
-        answers.splice(randomNumber, 0, this.correctAnswer);
+        answers?.splice(randomNumber, 0, this.correctAnswer);
 
         console.log(answers);
 
         return answers;
+      },
+    },
+
+    methods: {
+      submitAnswer(answer: string) {
+        console.log(answer);
       },
     },
 
