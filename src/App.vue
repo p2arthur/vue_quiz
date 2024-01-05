@@ -1,33 +1,9 @@
 <!-- @format -->
 
-<template>
-  <div>
-    <template v-if="this.question">
-      <h2 v-html="this.question" />
-
-      <template
-        v-for="(answer, index) in answers"
-        :key="index">
-        <input
-          id="answer"
-          type="radio"
-          value="answer" />
-        <label
-          for="answer"
-          v-html="answer" /><br />
-      </template>
-      <button
-        @click="submitAnswer"
-        class="send">
-        Submit
-      </button></template
-    >
-  </div>
-</template>
 //---------------------------------------------------------------------------
 <script lang="ts">
+  import Scoreboard from './components/Scoreboard.vue';
   import { QuestionInterface } from './interfaces/Interfaces';
-
   const url =
     'https://opentdb.com/api.php?amount=1&category=18&difficulty=medium';
 
@@ -39,6 +15,11 @@
         correctAnswer: null,
         incorrectAnswers: null,
         allAnswers: null,
+        selectedAnswer: null,
+        computerPoints: 0,
+        playerPoints: 0,
+        answerSubmited: false,
+        resultMessage: null,
       };
     },
 
@@ -69,14 +50,87 @@
     },
 
     methods: {
-      submitAnswer(answer: string) {
-        console.log(answer);
+      async resetQuestions() {
+        this.question = null;
+        this.correctAnswer = null;
+        this.selectedAnswer = null;
+        this.incorrectAnswers = null;
+        const { data } = await this.axios.get(url);
+        const { correct_answer, incorrect_answers, question, category } =
+          data.results[0];
+        this.question = question;
+        this.correctAnswer = correct_answer;
+        this.incorrectAnswers = incorrect_answers;
+        this.answerSubmited = false;
+      },
+
+      async submitAnswer() {
+        if (!this.selectedAnswer) {
+          alert('Please select an answer');
+          this.answerSubmited = false;
+          return;
+        }
+
+        this.answerSubmited = true;
+
+        const correctAnswer = this.selectedAnswer == this.correctAnswer;
+
+        correctAnswer
+          ? (this.playerPoints = this.playerPoints + 1) &&
+            (this.resultMessage = `Correct answer ✅ The correct answer is ${this.correctAnswer}`)
+          : (this.computerPoints = this.computerPoints + 1) &&
+            (this.resultMessage = `Wrong answer ❌ The correct answer is ${this.correctAnswer}`);
+
+        setTimeout(async () => {
+          await this.resetQuestions();
+        }, 2000);
       },
     },
 
-    components: {},
+    components: { Scoreboard },
   };
 </script>
+
+//------------------------------------------------------------
+
+<template>
+  <div>
+    <scoreboard
+      :playerPoints="this.playerPoints"
+      :computerPoints="this.computerPoints" />
+
+    <template v-if="this.question">
+      <h2 v-html="this.question" />
+
+      <template
+        v-for="(answer, index) in answers"
+        :key="index">
+        <form>
+          <input
+            :disabled="this.answerSubmited"
+            type="radio"
+            :id="'option' + index"
+            :value="answer"
+            v-model="this.selectedAnswer" />
+          <label
+            for="'option' + index"
+            v-html="answer" /><br />
+        </form>
+      </template>
+      <template v-if="answerSubmited">
+        <div class="message">{{ this.resultMessage }}</div>
+        <p>Loading next question...</p>
+      </template>
+
+      <button
+        v-if="!this.answerSubmited"
+        @click="this.submitAnswer"
+        class="send">
+        Submit
+      </button></template
+    >
+  </div>
+</template>
 //----------------------------------------------------------
 <style lang="scss">
   #app {
